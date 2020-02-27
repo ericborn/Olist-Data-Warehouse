@@ -54,7 +54,28 @@ JOIN Olist.dbo.category c ON c.product_category_name = p.product_category_name
 JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
 JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;
- 
+
+-- create indexes for the orders table
+-- One index for all important columns together
+-- individual indexes for all important columns
+CREATE INDEX orders_full_indx
+ON orders (product_category, seller_id, seller_city, seller_state);
+
+CREATE INDEX orders_product_category_indx
+ON orders (product_category);
+
+CREATE INDEX orders_seller_id_indx
+ON orders (seller_id);
+
+CREATE INDEX orders_seller_city_indx
+ON orders (seller_city);
+
+CREATE INDEX orders_seller_state_indx
+ON orders (seller_state);
+
+CREATE INDEX orders_seller_city_state_indx
+ON orders (seller_city, seller_state);
+
 -- Top 5 seller id, seller state, product category by volume
 -- Original database query
 USE Olist
