@@ -53,25 +53,50 @@ JOIN Olist.dbo.products p ON p.product_id = oi.product_id
 JOIN Olist.dbo.category c ON c.product_category_name = p.product_category_name
 JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
 JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
-GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state
+GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;
  
--- Top 5 sellers by volume
-SELECT TOP 5 seller_id, t.Year, SUM(Units_Sold) AS 'Total_Units'
+-- Top 5 seller id, seller state, product category by volume
+-- Original database query
+USE Olist
+SELECT TOP 5 t.year, s.seller_id, s.seller_state, c.product_category_name_english, COUNT(product_category_name_english)  AS 'Total_Units'--, SUM(oi.Units_Sold)
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+JOIN products p ON p.product_id = oi.product_id
+JOIN category c ON c.product_category_name = p.product_category_name
+JOIN sellers s ON s.seller_id = oi.seller_id
+JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+WHERE t.Year = 2018
+GROUP BY t.Year, s.seller_id, s.seller_state, c.product_category_name_english
+ORDER BY Total_Units DESC;
+
+-- Data warehouse query
+USE Olist_DW
+SELECT TOP 5 t.Year, o.seller_id, o.seller_state, o.product_category, SUM(o.Units_Sold) AS 'Total_Units'
 FROM orders o
 JOIN time_period t ON t.DateKey = o.DateKey
 WHERE t.Year = 2018
-GROUP BY seller_id, t.Year
-ORDER BY Total_Units DESC
+GROUP BY t.Year, o.seller_id, o.seller_state, o.product_category
+ORDER BY Total_Units DESC;
 
--- Top 5 sellers by revenue
-SELECT TOP 5 seller_id, t.Year, ROUND(SUM(Total_Value), 2) AS 'Total_Revenue'
+-- Top 5 seller id, seller state, product category by revenue
+-- Original database query
+USE Olist
+SELECT TOP 5 t.year, s.seller_id, s.seller_state, c.product_category_name_english, ROUND(SUM(oi.price), 2) AS 'Total_Revenue'
+FROM orders o
+JOIN order_items oi ON oi.order_id = o.order_id
+JOIN products p ON p.product_id = oi.product_id
+JOIN category c ON c.product_category_name = p.product_category_name
+JOIN sellers s ON s.seller_id = oi.seller_id
+JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+WHERE t.Year = 2018
+GROUP BY t.Year, s.seller_id, s.seller_state, c.product_category_name_english
+ORDER BY Total_Revenue DESC;
+
+-- Data warehouse query
+USE Olist_DW
+SELECT TOP 5 t.Year, o.seller_id, o.seller_state, o.product_category, ROUND(SUM(o.Total_Value), 2) AS 'Total_Revenue'
 FROM orders o
 JOIN time_period t ON t.DateKey = o.DateKey
 WHERE t.Year = 2018
-GROUP BY seller_id, t.Year
-ORDER BY Total_Revenue DESC
-
-
-SELECT *
-FROM orders
-
+GROUP BY t.Year, o.seller_id, o.seller_state, o.product_category
+ORDER BY Total_Revenue DESC;
