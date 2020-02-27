@@ -36,12 +36,14 @@ USE Olist_DW
 --DROP TABLE orders
 
 -- Gathers the data from the Olist database and insert it into a table called orders in the Olist_DW database
+-- Uses a case statement to correct misspellings of São Paulo
 -- does a convert on the time.datekey from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
 SELECT t.DateKey, c.product_category_name_english AS 'product_category', oi.seller_id, 
 CASE
 	WHEN s.seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
-	THEN 'Sãu Paulo'
+	THEN 'São Paulo'
+	ELSE s.seller_city
 END AS 'seller_city',
 s.seller_state, SUM(oi.price) AS 'Total_Value', COUNT(oi.product_id) AS 'Units_Sold'
 INTO orders
@@ -53,36 +55,23 @@ JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
 JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state
  
-SELECT TOP 100 * FROM orders
-
--- Find misspelled Sãu Paulo in seller_city column
-SELECT distinct seller_city
-FROM sellers s
-WHERE seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
-
--- Replace misspellings
-UPDATE sellers
-SET seller_city = 'Sãu Paulo'
-WHERE seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
-
-SELECT top 100 * from time
-
-SELECT top 100 *
-FROM sellers s
-JOIN geolocation gl ON gl.geolocation_zip_code_prefix = s.seller_zip_code_prefix
-
-SELECT * FROM geolocation
-
-SELECT * --p. 
+-- Top 5 sellers by volume
+SELECT TOP 5 seller_id, t.Year, SUM(Units_Sold) AS 'Total_Units'
 FROM orders o
-JOIN order_items oi ON oi.order_id = o.order_id
-JOIN products p ON p.product_id = oi.product_id
-JOIN category c ON c.product_category_name = p.product_category_name
+JOIN time_period t ON t.DateKey = o.DateKey
+WHERE t.Year = 2018
+GROUP BY seller_id, t.Year
+ORDER BY Total_Units DESC
 
-SELECT TOP 100 *
-FROM order_items --orders
+-- Top 5 sellers by revenue
+SELECT TOP 5 seller_id, t.Year, ROUND(SUM(Total_Value), 2) AS 'Total_Revenue'
+FROM orders o
+JOIN time_period t ON t.DateKey = o.DateKey
+WHERE t.Year = 2018
+GROUP BY seller_id, t.Year
+ORDER BY Total_Revenue DESC
 
-SELECT TOP 100 *--count(*)
-FROM products p
-JOIN category c ON c.product_category_name = p.product_category_name
+
+SELECT *
+FROM orders
 
