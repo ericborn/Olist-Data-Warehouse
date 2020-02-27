@@ -75,7 +75,7 @@ CREATE INDEX orders_total_revenue_indx
 ON orders ([DateKey]) INCLUDE ([product_category], [seller_id], seller_state, [Total_value]);
 
 ------------------
--- Turn on statistics to measure performance between DB and DW
+-- Turn on statistics to measure performance between OLTP DB and DW
 SET STATISTICS IO ON
 SET STATISTICS TIME ON
 --------------------
