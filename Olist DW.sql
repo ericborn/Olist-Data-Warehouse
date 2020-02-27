@@ -55,26 +55,27 @@ JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
 JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;
 
--- create indexes for the orders table
--- One index for all important columns together
--- individual indexes for all important columns
-CREATE INDEX orders_full_indx
-ON orders (product_category, seller_id, seller_city, seller_state);
+-- Create indexes for the top sellers by volume
+USE Olist
+CREATE INDEX orders_purchase_id_indx
+ON orders ([order_purchase_timestamp]) INCLUDE ([order_id]);
 
-CREATE INDEX orders_product_category_indx
-ON orders (product_category);
+CREATE INDEX order_items_order_id_indx
+ON order_items ([order_id]) INCLUDE ([product_id], [seller_id]);
 
-CREATE INDEX orders_seller_id_indx
-ON orders (seller_id);
+CREATE INDEX products_prod_id_category_indx
+ON products (product_id) INCLUDE ([product_category_name]);
 
-CREATE INDEX orders_seller_city_indx
-ON orders (seller_city);
 
-CREATE INDEX orders_seller_state_indx
-ON orders (seller_state);
 
-CREATE INDEX orders_seller_city_state_indx
-ON orders (seller_city, seller_state);
+-- Create indexes for the orders table of the data warehouse total units and revenue queries
+USE Olist_DW
+CREATE INDEX orders_total_units_indx
+ON orders ([DateKey]) INCLUDE ([product_category], [seller_id], seller_state, [Units_Sold]);
+
+CREATE INDEX orders_total_revenue_indx
+ON orders ([DateKey]) INCLUDE ([product_category], [seller_id], seller_state, [Total_value]);
+
 
 -- Top 5 seller id, seller state, product category by volume
 -- Original database query
