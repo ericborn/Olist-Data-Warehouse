@@ -66,8 +66,6 @@ ON order_items ([order_id]) INCLUDE ([product_id], [seller_id]);
 CREATE INDEX products_prod_id_category_indx
 ON products (product_id) INCLUDE ([product_category_name]);
 
-
-
 -- Create indexes for the orders table of the data warehouse total units and revenue queries
 USE Olist_DW
 CREATE INDEX orders_total_units_indx
@@ -76,6 +74,11 @@ ON orders ([DateKey]) INCLUDE ([product_category], [seller_id], seller_state, [U
 CREATE INDEX orders_total_revenue_indx
 ON orders ([DateKey]) INCLUDE ([product_category], [seller_id], seller_state, [Total_value]);
 
+------------------
+-- Turn on statistics to measure performance between DB and DW
+SET STATISTICS IO ON
+SET STATISTICS TIME ON
+--------------------
 
 -- Top 5 seller id, seller state, product category by volume
 -- Original database query
