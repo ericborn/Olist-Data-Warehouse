@@ -38,7 +38,11 @@ USE Olist_DW
 -- Gathers the data from the Olist database and insert it into a table called orders in the Olist_DW database
 -- does a convert on the time.datekey from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
-SELECT t.DateKey, c.product_category_name_english AS 'product_category', oi.seller_id, s.seller_city, 
+SELECT t.DateKey, c.product_category_name_english AS 'product_category', oi.seller_id, 
+CASE
+	WHEN s.seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
+	THEN 'Sãu Paulo'
+END AS 'seller_city',
 s.seller_state, SUM(oi.price) AS 'Total_Value', COUNT(oi.product_id) AS 'Units_Sold'
 INTO orders
 FROM Olist.dbo.orders o
