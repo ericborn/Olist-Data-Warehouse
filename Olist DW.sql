@@ -48,7 +48,31 @@ BEGIN
     SELECT 'Olist_DW database has been created'
 END
 
+-- Code to setup the product table within the warehouse
+--DROP SEQUENCE product_key
+CREATE SEQUENCE product_key
+START WITH 1000 
+INCREMENT BY 1;
+
+--DROP TABLE product
+-- Select product names from Olist category
+-- move into product table in the warehouse
+-- filters out a header row that slipped in on the import
 USE Olist_DW
+SELECT NEXT VALUE FOR product_key AS product_key, Product_category_name_english AS 'product'
+INTO product
+FROM Olist.dbo.category
+WHERE Product_category_name_english != 'Product_category_name_english'
+
+-- Select business_segment from Olist marketing closed_deals
+-- Move into product table in the warehouse where the product doesn't already exist
+INSERT INTO product
+SELECT NEXT VALUE FOR product_key AS product_key, cd.business_segment AS 'product' 
+FROM (SELECT DISTINCT business_segment 
+	  FROM Olist_Marketing.dbo.closed_deals
+	  WHERE business_segment IS NOT NULL AND business_segment NOT IN (SELECT DISTINCT product FROM product)) cd
+
+SELECT * FROM product
 
 --DROP TABLE orders
 
@@ -57,6 +81,7 @@ USE Olist_DW
 -- does a convert on the time.datekey from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
 -- filters out any canceled orders and only orders earlier than 2019
+USE Olist_DW
 SELECT t.DateKey, c.product_category_name_english AS 'product_category', oi.seller_id, 
 CASE
 	WHEN s.seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
@@ -77,9 +102,8 @@ GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english,
 -- select data from the marketing db
 USE Olist_Marketing
 SELECT DISTINCT
---DISTINCT origin, business_segment, lead_type, business_type, COUNT(*)
-t.DateKey, l.origin, AVG(DATEDIFF(HH, l.first_contact_date, cd.won_date)) AS 'Hours to convert',
-cd.business_segment, cd.lead_type, cd.business_type
+t.DateKey, l.origin, cd.business_segment, cd.lead_type, cd.business_type,
+AVG(DATEDIFF(HOUR, l.first_contact_date, cd.won_date)) AS 'avg_hrs_convert'
 FROM leads l
 INNER JOIN closed_deals cd ON l.mql_id = cd.mql_id
 INNER JOIN Olist.dbo.sellers s ON s.seller_id = cd.seller_id
@@ -87,6 +111,7 @@ INNER JOIN Olist.dbo.order_items oi ON oi.seller_id = s.seller_id
 INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,cd.won_date,112)
 WHERE l.origin IS NOT NULL AND l.origin != 'unknown'
 GROUP BY DateKey, l.origin, cd.business_segment, cd.lead_type, cd.business_type
+
 
 ----------------------------------------------
 -- Create indexes for the top sellers by volume
