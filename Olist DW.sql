@@ -46,7 +46,7 @@ ELSE
 BEGIN
     CREATE DATABASE [Olist_DW]
     SELECT 'Olist_DW database has been created'
-END
+END;
 
 -- Code to setup the product table within the warehouse
 --DROP SEQUENCE product_key
@@ -62,7 +62,7 @@ USE Olist_DW
 SELECT NEXT VALUE FOR product_key AS product_key, Product_category_name_english AS 'product'
 INTO product
 FROM Olist.dbo.category
-WHERE Product_category_name_english != 'Product_category_name_english'
+WHERE Product_category_name_english != 'Product_category_name_english';
 
 -- Select business_segment from Olist marketing closed_deals
 -- Move into product table in the warehouse where the product doesn't already exist
@@ -70,12 +70,12 @@ INSERT INTO product
 SELECT NEXT VALUE FOR product_key AS product_key, cd.business_segment AS 'product' 
 FROM (SELECT DISTINCT business_segment 
 	  FROM Olist_Marketing.dbo.closed_deals
-	  WHERE business_segment IS NOT NULL AND business_segment NOT IN (SELECT DISTINCT product FROM product)) cd
+	  WHERE business_segment IS NOT NULL AND business_segment NOT IN (SELECT DISTINCT product FROM product)) cd;
 
-SELECT * FROM product
+--SELECT * FROM product;
 
 SELECT DISTINCT geolocation_city, geolocation_state, geolocation_zip_code_prefix
-FROM olist.dbo.geolocation
+FROM olist.dbo.geolocation;
 
 -- Code to setup the location table within the warehouse
 --DROP SEQUENCE location_key
@@ -89,40 +89,36 @@ INCREMENT BY 1;
 -- filters out a header row that slipped in on the import
 USE Olist_DW
 SELECT NEXT VALUE FOR location_key AS location_key,
-gl.geolocation_city, gl.geolocation_state, gl.geolocation_zip_code_prefix
+gl.geolocation_city AS 'city', gl.geolocation_state AS 'state', gl.geolocation_zip_code_prefix AS 'zip'
 INTO location
 FROM (SELECT DISTINCT geolocation_city, geolocation_state, geolocation_zip_code_prefix
-	  FROM Olist.dbo.geolocation) gl
+	  FROM Olist.dbo.geolocation) gl;
 
 
-SELECT * 
-FROM location
-ORDER BY location_key
+--SELECT * FROM location;
 
 --DROP TABLE orders
-
 -- Gathers the initial data from the Olist database and insert it into a table called orders in the Olist_DW database
 -- Uses a case statement to correct misspellings of São Paulo
 -- does a convert on the time.datekey from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
 -- filters out any canceled orders and only orders earlier than 2019
 USE Olist_DW
-SELECT t.DateKey, c.product_category_name_english AS 'product_category', oi.seller_id, 
-CASE
-	WHEN s.seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
-	THEN 'São Paulo'
-	ELSE s.seller_city
-END AS 'seller_city',
-s.seller_state, SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
---INTO orders
+SELECT t.DateKey, l.location_key, p2.product_key, oi.seller_id, 
+SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
+INTO orders
 FROM Olist.dbo.orders o
-JOIN Olist.dbo.order_items oi ON oi.order_id = o.order_id
-JOIN Olist.dbo.products p ON p.product_id = oi.product_id
-JOIN Olist.dbo.category c ON c.product_category_name = p.product_category_name
-JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
-JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN Olist.dbo.order_items oi ON oi.order_id = o.order_id
+INNER JOIN Olist.dbo.products p ON p.product_id = oi.product_id
+INNER JOIN Olist.dbo.category c ON c.product_category_name = p.product_category_name
+INNER JOIN product p2 ON p2.product = c.Product_category_name_english
+INNER JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN location l ON l.zip = s.seller_zip_code_prefix AND l.city = s.seller_city
 WHERE o.order_status != 'canceled' AND order_purchase_timestamp < '20190101'
-GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;
+GROUP BY t.DateKey, l.location_key, p2.product_key, oi.seller_id;
+
+--SELECT * FROM orders;
 
 -- select data from the marketing db
 USE Olist_Marketing
