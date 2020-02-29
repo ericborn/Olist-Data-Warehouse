@@ -281,6 +281,8 @@ SELECT * FROM conversions
 --WHERE order_purchase_timestamp > '20181231'
 --DELETE FROM Olist_Orders.dbo.order_items
 --WHERE shipping_limit_date = '20190105 12:30:00'
+--DELETE FROM Olist_DW.dbo.orders
+--WHERE date_key > '20181231'
 
 -- Create fake 2019 orders data
 USE Olist_Orders
