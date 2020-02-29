@@ -11,8 +11,8 @@
   DTS:LocaleID="1033"
   DTS:ObjectName="Package"
   DTS:PackageType="5"
-  DTS:VersionBuild="3"
-  DTS:VersionGUID="{BF133B1C-42B5-4E0F-867D-5BA49E83BCFC}">
+  DTS:VersionBuild="4"
+  DTS:VersionGUID="{E93BE80E-9353-423C-8566-071E69756762}">
   <DTS:Property
     DTS:Name="PackageFormatVersion">8</DTS:Property>
   <DTS:Variables />
@@ -56,21 +56,25 @@
                   dataType="System.String"
                   description="The SQL command to be executed."
                   name="SqlCommand"
-                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor">SELECT t.DateKey, c.product_category_name_english AS 'product_category', oi.seller_id, 
-CASE
-	WHEN s.seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
-	THEN 'São Paulo'
-	ELSE s.seller_city
-END AS 'seller_city',
-s.seller_state, SUM(oi.price) AS 'Total_Value', COUNT(oi.product_id) AS 'Units_Sold'
-FROM Olist.dbo.orders o
-JOIN Olist.dbo.order_items oi ON oi.order_id = o.order_id
-JOIN Olist.dbo.products p ON p.product_id = oi.product_id
-JOIN Olist.dbo.category c ON c.product_category_name = p.product_category_name
-JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
-JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
-WHERE o.order_status != 'canceled' AND order_purchase_timestamp &lt; '20190101'
-GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;</property>
+                  UITypeEditor="Microsoft.DataTransformationServices.Controls.ModalMultilineStringEditor">DECLARE @start_date DATE,
+		@end_date DATE
+
+SELECT @start_date = '20190101 00:00:00', @end_date = '20190102 00:00:00'
+
+--USE Olist_DW
+SELECT t.date_key, l.location_key, p2.product_key, oi.seller_id, 
+SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
+FROM Olist_Orders.dbo.orders o
+INNER JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
+INNER JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
+INNER JOIN Olist_Orders.dbo.category c ON c.product_category_name = p.product_category_name
+INNER JOIN Olist_DW.dbo.product p2 ON p2.product = c.Product_category_name_english
+INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
+INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN Olist_DW.dbo.location l ON l.zip = s.seller_zip_code_prefix AND l.city = s.seller_city
+WHERE o.order_status != 'canceled' AND 
+order_purchase_timestamp &gt;= @start_date AND order_purchase_timestamp &lt; @end_date
+GROUP BY t.date_key, l.location_key, p2.product_key, oi.seller_id;</property>
                 <property
                   dataType="System.String"
                   description="The variable that contains the SQL command to be executed."
@@ -96,8 +100,8 @@ GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english,
               <connections>
                 <connection
                   refId="Package\Extract Orders Data\Olist.Connections[OleDbConnection]"
-                  connectionManagerID="{A9D5C8D6-F54B-4040-BE35-413F176291E6}:external"
-                  connectionManagerRefId="Project.ConnectionManagers[localhost.Olist]"
+                  connectionManagerID="{F7C82023-7E45-4797-AC36-0A463A9FEEF0}:external"
+                  connectionManagerRefId="Project.ConnectionManagers[localhost.Olist_DW]"
                   description="The OLE DB runtime connection used to access the database."
                   name="OleDbConnection" />
               </connections>
@@ -107,23 +111,31 @@ GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english,
                   name="OLE DB Source Output">
                   <outputColumns>
                     <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[DateKey]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[date_key]"
                       dataType="i4"
                       errorOrTruncationOperation="Conversion"
                       errorRowDisposition="FailComponent"
-                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[DateKey]"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[DateKey]"
-                      name="DateKey"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[date_key]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[date_key]"
+                      name="date_key"
                       truncationRowDisposition="FailComponent" />
                     <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[product_category]"
-                      dataType="wstr"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[location_key]"
+                      dataType="i8"
                       errorOrTruncationOperation="Conversion"
                       errorRowDisposition="FailComponent"
-                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[product_category]"
-                      length="50"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[product_category]"
-                      name="product_category"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[location_key]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[location_key]"
+                      name="location_key"
+                      truncationRowDisposition="FailComponent" />
+                    <outputColumn
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[product_key]"
+                      dataType="i8"
+                      errorOrTruncationOperation="Conversion"
+                      errorRowDisposition="FailComponent"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[product_key]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[product_key]"
+                      name="product_key"
                       truncationRowDisposition="FailComponent" />
                     <outputColumn
                       refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[seller_id]"
@@ -136,78 +148,51 @@ GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english,
                       name="seller_id"
                       truncationRowDisposition="FailComponent" />
                     <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[seller_city]"
-                      dataType="wstr"
-                      errorOrTruncationOperation="Conversion"
-                      errorRowDisposition="FailComponent"
-                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[seller_city]"
-                      length="50"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[seller_city]"
-                      name="seller_city"
-                      truncationRowDisposition="FailComponent" />
-                    <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[seller_state]"
-                      dataType="wstr"
-                      errorOrTruncationOperation="Conversion"
-                      errorRowDisposition="FailComponent"
-                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[seller_state]"
-                      length="50"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[seller_state]"
-                      name="seller_state"
-                      truncationRowDisposition="FailComponent" />
-                    <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[Total_Value]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[sales_total]"
                       dataType="r8"
                       errorOrTruncationOperation="Conversion"
                       errorRowDisposition="FailComponent"
-                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[Total_Value]"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[Total_Value]"
-                      name="Total_Value"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[sales_total]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[sales_total]"
+                      name="sales_total"
                       truncationRowDisposition="FailComponent" />
                     <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[Units_Sold]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[sales_quantity]"
                       dataType="i4"
                       errorOrTruncationOperation="Conversion"
                       errorRowDisposition="FailComponent"
-                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[Units_Sold]"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[Units_Sold]"
-                      name="Units_Sold"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[sales_quantity]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[sales_quantity]"
+                      name="sales_quantity"
                       truncationRowDisposition="FailComponent" />
                   </outputColumns>
                   <externalMetadataColumns
                     isUsed="True">
                     <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[DateKey]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[date_key]"
                       dataType="i4"
-                      name="DateKey" />
+                      name="date_key" />
                     <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[product_category]"
-                      dataType="wstr"
-                      length="50"
-                      name="product_category" />
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[location_key]"
+                      dataType="i8"
+                      name="location_key" />
+                    <externalMetadataColumn
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[product_key]"
+                      dataType="i8"
+                      name="product_key" />
                     <externalMetadataColumn
                       refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[seller_id]"
                       dataType="wstr"
                       length="50"
                       name="seller_id" />
                     <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[seller_city]"
-                      dataType="wstr"
-                      length="50"
-                      name="seller_city" />
-                    <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[seller_state]"
-                      dataType="wstr"
-                      length="50"
-                      name="seller_state" />
-                    <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[Total_Value]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[sales_total]"
                       dataType="r8"
-                      name="Total_Value" />
+                      name="sales_total" />
                     <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[Units_Sold]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].ExternalColumns[sales_quantity]"
                       dataType="i4"
-                      name="Units_Sold" />
+                      name="sales_quantity" />
                   </externalMetadataColumns>
                 </output>
                 <output
@@ -216,16 +201,20 @@ GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english,
                   name="OLE DB Source Error Output">
                   <outputColumns>
                     <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[DateKey]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[date_key]"
                       dataType="i4"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[DateKey]"
-                      name="DateKey" />
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[date_key]"
+                      name="date_key" />
                     <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[product_category]"
-                      dataType="wstr"
-                      length="50"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[product_category]"
-                      name="product_category" />
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[location_key]"
+                      dataType="i8"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[location_key]"
+                      name="location_key" />
+                    <outputColumn
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[product_key]"
+                      dataType="i8"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[product_key]"
+                      name="product_key" />
                     <outputColumn
                       refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[seller_id]"
                       dataType="wstr"
@@ -233,27 +222,15 @@ GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english,
                       lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[seller_id]"
                       name="seller_id" />
                     <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[seller_city]"
-                      dataType="wstr"
-                      length="50"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[seller_city]"
-                      name="seller_city" />
-                    <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[seller_state]"
-                      dataType="wstr"
-                      length="50"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[seller_state]"
-                      name="seller_state" />
-                    <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[Total_Value]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[sales_total]"
                       dataType="r8"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[Total_Value]"
-                      name="Total_Value" />
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[sales_total]"
+                      name="sales_total" />
                     <outputColumn
-                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[Units_Sold]"
+                      refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[sales_quantity]"
                       dataType="i4"
-                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[Units_Sold]"
-                      name="Units_Sold" />
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[sales_quantity]"
+                      name="sales_quantity" />
                     <outputColumn
                       refId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Error Output].Columns[ErrorCode]"
                       dataType="i4"
@@ -342,40 +319,72 @@ GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english,
                   errorRowDisposition="FailComponent"
                   hasSideEffects="true"
                   name="OLE DB Destination Input">
+                  <inputColumns>
+                    <inputColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].Columns[date_key]"
+                      cachedDataType="i4"
+                      cachedName="date_key"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[date_key]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[date_key]" />
+                    <inputColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].Columns[location_key]"
+                      cachedDataType="i8"
+                      cachedName="location_key"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[location_key]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[location_key]" />
+                    <inputColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].Columns[product_key]"
+                      cachedDataType="i8"
+                      cachedName="product_key"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[product_key]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[product_key]" />
+                    <inputColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].Columns[seller_id]"
+                      cachedDataType="wstr"
+                      cachedLength="50"
+                      cachedName="seller_id"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[seller_id]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[seller_id]" />
+                    <inputColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].Columns[sales_total]"
+                      cachedDataType="r8"
+                      cachedName="sales_total"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[sales_total]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[sales_total]" />
+                    <inputColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].Columns[sales_quantity]"
+                      cachedDataType="i4"
+                      cachedName="sales_quantity"
+                      externalMetadataColumnId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[sales_quantity]"
+                      lineageId="Package\Extract Orders Data\Olist.Outputs[OLE DB Source Output].Columns[sales_quantity]" />
+                  </inputColumns>
                   <externalMetadataColumns
                     isUsed="True">
-                    <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[DateKey]"
-                      dataType="i4"
-                      name="DateKey" />
-                    <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[product_category]"
-                      dataType="wstr"
-                      length="50"
-                      name="product_category" />
                     <externalMetadataColumn
                       refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[seller_id]"
                       dataType="wstr"
                       length="50"
                       name="seller_id" />
                     <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[seller_city]"
-                      dataType="wstr"
-                      length="50"
-                      name="seller_city" />
-                    <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[seller_state]"
-                      dataType="wstr"
-                      length="50"
-                      name="seller_state" />
-                    <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[Total_Value]"
-                      dataType="r8"
-                      name="Total_Value" />
-                    <externalMetadataColumn
-                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[Units_Sold]"
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[date_key]"
                       dataType="i4"
-                      name="Units_Sold" />
+                      name="date_key" />
+                    <externalMetadataColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[location_key]"
+                      dataType="i8"
+                      name="location_key" />
+                    <externalMetadataColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[product_key]"
+                      dataType="i8"
+                      name="product_key" />
+                    <externalMetadataColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[sales_total]"
+                      dataType="r8"
+                      name="sales_total" />
+                    <externalMetadataColumn
+                      refId="Package\Extract Orders Data\Olist DW.Inputs[OLE DB Destination Input].ExternalColumns[sales_quantity]"
+                      dataType="i4"
+                      name="sales_quantity" />
                   </externalMetadataColumns>
                 </input>
               </inputs>
@@ -441,13 +450,13 @@ GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english,
       <GraphLayout
         Capacity="4" xmlns="clr-namespace:Microsoft.SqlServer.IntegrationServices.Designer.Model.Serialization;assembly=Microsoft.SqlServer.IntegrationServices.Graph" xmlns:mssgle="clr-namespace:Microsoft.SqlServer.Graph.LayoutEngine;assembly=Microsoft.SqlServer.Graph" xmlns:assembly="http://schemas.microsoft.com/winfx/2006/xaml">
         <NodeLayout
-          Size="101,42"
-          Id="Package\Extract Orders Data\Olist"
-          TopLeft="439,277" />
-        <NodeLayout
           Size="122,42"
           Id="Package\Extract Orders Data\Olist DW"
           TopLeft="427,417" />
+        <NodeLayout
+          Size="101,42"
+          Id="Package\Extract Orders Data\Olist"
+          TopLeft="439,277" />
         <EdgeLayout
           Id="Package\Extract Orders Data.Paths[OLE DB Source Output]"
           TopLeft="488.75,319">
