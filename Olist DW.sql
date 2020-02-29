@@ -63,8 +63,8 @@ CASE
 	THEN 'São Paulo'
 	ELSE s.seller_city
 END AS 'seller_city',
-s.seller_state, SUM(oi.price) AS 'Total_Value', COUNT(oi.product_id) AS 'Units_Sold'
-INTO orders
+s.seller_state, SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
+--INTO orders
 FROM Olist.dbo.orders o
 JOIN Olist.dbo.order_items oi ON oi.order_id = o.order_id
 JOIN Olist.dbo.products p ON p.product_id = oi.product_id
@@ -74,6 +74,21 @@ JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(
 WHERE o.order_status != 'canceled' AND order_purchase_timestamp < '20190101'
 GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;
 
+-- select data from the marketing db
+USE Olist_Marketing
+SELECT DISTINCT
+--DISTINCT origin, business_segment, lead_type, business_type, COUNT(*)
+t.DateKey, l.origin, AVG(DATEDIFF(HH, l.first_contact_date, cd.won_date)) AS 'Hours to convert',
+cd.business_segment, cd.lead_type, cd.business_type
+FROM leads l
+INNER JOIN closed_deals cd ON l.mql_id = cd.mql_id
+INNER JOIN Olist.dbo.sellers s ON s.seller_id = cd.seller_id
+INNER JOIN Olist.dbo.order_items oi ON oi.seller_id = s.seller_id
+INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,cd.won_date,112)
+WHERE l.origin IS NOT NULL AND l.origin != 'unknown'
+GROUP BY DateKey, l.origin, cd.business_segment, cd.lead_type, cd.business_type
+
+----------------------------------------------
 -- Create indexes for the top sellers by volume
 USE Olist
 CREATE INDEX orders_purchase_id_indx
