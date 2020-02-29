@@ -99,7 +99,6 @@ FROM (SELECT DISTINCT geolocation_city, geolocation_state, geolocation_zip_code_
 
 --DROP TABLE orders
 -- Gathers the initial data from the Olist database and insert it into a table called orders in the Olist_DW database
--- Uses a case statement to correct misspellings of São Paulo
 -- does a convert on the time.datekey from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
 -- filters out any canceled orders and only orders earlier than 2019
@@ -120,18 +119,24 @@ GROUP BY t.DateKey, l.location_key, p2.product_key, oi.seller_id;
 
 --SELECT * FROM orders;
 
--- select data from the marketing db
-USE Olist_Marketing
+--DROP conversions
+-- select data from the marketing db to move into the data warehouse
+-- does a convert on the time.datekey from INT to DATE
+-- also converts orders order_purchase_timestamp from DATETIME to DATE
+-- only selects rows that have an origin, not null or unknown
+USE Olist_DW
 SELECT DISTINCT
-t.DateKey, l.origin, cd.business_segment, cd.lead_type, cd.business_type,
+t.DateKey, p.product_key, l.origin, cd.lead_type, cd.business_type,
 AVG(DATEDIFF(HOUR, l.first_contact_date, cd.won_date)) AS 'avg_hrs_convert'
-FROM leads l
-INNER JOIN closed_deals cd ON l.mql_id = cd.mql_id
+INTO conversions
+FROM Olist_Marketing.dbo.leads l
+INNER JOIN Olist_Marketing.dbo.closed_deals cd ON l.mql_id = cd.mql_id
 INNER JOIN Olist.dbo.sellers s ON s.seller_id = cd.seller_id
 INNER JOIN Olist.dbo.order_items oi ON oi.seller_id = s.seller_id
-INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,cd.won_date,112)
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,cd.won_date,112)
+INNER JOIN product p ON p.product = cd.business_segment
 WHERE l.origin IS NOT NULL AND l.origin != 'unknown'
-GROUP BY DateKey, l.origin, cd.business_segment, cd.lead_type, cd.business_type
+GROUP BY t.DateKey, p.product_key, l.origin, cd.lead_type, cd.business_type
 
 
 ----------------------------------------------
