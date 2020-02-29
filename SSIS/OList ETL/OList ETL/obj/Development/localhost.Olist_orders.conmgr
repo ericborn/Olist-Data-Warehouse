@@ -1,4 +1,4 @@
-﻿<?xml version="1.0"?>
+<?xml version="1.0"?>
 <DTS:ConnectionManager xmlns:DTS="www.microsoft.com/SqlServer/Dts"
   DTS:ObjectName="localhost Olist_orders"
   DTS:DTSID="{A9D5C8D6-F54B-4040-BE35-413F176291E6}"
