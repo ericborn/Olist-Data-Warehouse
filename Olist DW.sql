@@ -146,10 +146,10 @@ FROM Olist_Orders.dbo.orders o
 INNER JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
 INNER JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
 INNER JOIN Olist_Orders.dbo.category c ON c.product_category_name = p.product_category_name
-INNER JOIN product p2 ON p2.product = c.Product_category_name_english
+INNER JOIN Olist_DW.dbo.product p2 ON p2.product = c.Product_category_name_english
 INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
-INNER JOIN location l ON l.zip = s.seller_zip_code_prefix AND l.city = s.seller_city
+INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN Olist_DW.dbo.location l ON l.zip = s.seller_zip_code_prefix AND l.city = s.seller_city
 WHERE o.order_status != 'canceled' AND order_purchase_timestamp < '20190101'
 GROUP BY t.date_key, l.location_key, p2.product_key, oi.seller_id;
 
@@ -175,11 +175,11 @@ INNER JOIN origin o ON o.origin = l.origin
 INNER JOIN lead_type lt ON lt.lead_type = cd.lead_type
 INNER JOIN business_type bt ON bt.business_type = cd.business_type
 WHERE l.origin IS NOT NULL AND l.origin != 'unknown'
-GROUP BY t.date_key, p.product_key, o.origin_key, lt.lead_type_key, bt.business_type_key
+GROUP BY t.date_key, p.product_key, o.origin_key, lt.lead_type_key, bt.business_type_key;
 
 -- delete the single row with a negative conversion hours
 DELETE FROM conversions
-WHERE avg_hrs_convert < 1
+WHERE avg_hrs_convert < 1;
 
 --SELECT * FROM conversions;
 
@@ -309,25 +309,18 @@ VALUES
 -- dates are hard coded, but with dynamic SQL using date add, diff and get date the code can always grab
 -- only records that were created yesterday
 USE Olist_DW
-INSERT INTO orders (date_key, product_category, seller_id, seller_city, seller_state, total_value, units_sold)
-SELECT t.date_key, c.product_category_name_english AS 'product_category', oi.seller_id, 
-CASE
-	WHEN s.seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
-	THEN 'São Paulo'
-	ELSE s.seller_city
-END AS 'seller_city',
-s.seller_state, SUM(oi.price) AS 'Total_Value', COUNT(oi.product_id) AS 'Units_Sold'
+INSERT INTO orders (date_key, location_key, product_key, seller_id, sales_total, sales_quantity)
+SELECT t.date_key, l.location_key, p2.product_key, oi.seller_id, 
+SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
 FROM Olist_Orders.dbo.orders o
-JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
-JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
-JOIN Olist_Orders.dbo.category c ON c.product_category_name = p.product_category_name
-JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
-JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
+INNER JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
+INNER JOIN Olist_Orders.dbo.category c ON c.product_category_name = p.product_category_name
+INNER JOIN Olist_DW.dbo.product p2 ON p2.product = c.Product_category_name_english
+INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
+INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN Olist_DW.dbo.location l ON l.zip = s.seller_zip_code_prefix AND l.city = s.seller_city
 WHERE o.order_status != 'canceled' AND order_purchase_timestamp >= '20190101 00:00:00' AND order_purchase_timestamp < '20190102 00:00:00'
 --order_purchase_timestamp >= DATEADD(DAY, DATEDIFF(DAY,1,GETDATE()),0)
 --AND order_purchase_timestamp < DATEADD(DAY, DATEDIFF(DAY,0,GETDATE()),0)
-GROUP BY t.date_key, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;
-
-SELECT *
-FROM orders
-ORDER BY order_purchase_timestamp desc
+GROUP BY t.date_key, l.location_key, p2.product_key, oi.seller_id;
