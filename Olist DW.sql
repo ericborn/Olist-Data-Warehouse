@@ -3,6 +3,23 @@ Eric Born
 Oline data warehouse project
 */
 
+-- Rename CSV imported table names for the business transactions data
+USE Olist
+EXEC sp_rename 'olist_customers_dataset', 'customers'
+EXEC sp_rename 'olist_geolocation_dataset', 'geolocation'
+EXEC sp_rename 'olist_order_items_dataset', 'order_items'
+EXEC sp_rename 'olist_order_payments_dataset', 'order_payments'
+EXEC sp_rename 'olist_order_reviews_dataset', 'order_reviews'
+EXEC sp_rename 'olist_orders_dataset', 'orders'
+EXEC sp_rename 'olist_products_dataset', 'products'
+EXEC sp_rename 'olist_sellers_dataset', 'sellers'
+EXEC sp_rename 'product_category_name_translation', 'category'
+
+-- Rename CSV imported table names for the marketing data
+USE Olist_Marketing
+EXEC sp_rename 'olist_closed_deals_dataset', 'closed_deals'
+EXEC sp_rename 'olist_marketing_qualified_leads_dataset', 'leads'
+
 -- script to output database schema
 -- Provided by lucidchart.com with their import data feature
 SELECT 'sqlserver' dbms,t.TABLE_CATALOG,t.TABLE_SCHEMA,t.TABLE_NAME,c.COLUMN_NAME,c.ORDINAL_POSITION,c.DATA_TYPE,
