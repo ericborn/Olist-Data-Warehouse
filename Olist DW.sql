@@ -4,7 +4,7 @@ Oline data warehouse project
 */
 
 -- Rename CSV imported table names for the business transactions data
-USE Olist
+USE Olist_Orders
 EXEC sp_rename 'olist_customers_dataset', 'customers'
 EXEC sp_rename 'olist_geolocation_dataset', 'geolocation'
 EXEC sp_rename 'olist_order_items_dataset', 'order_items'
@@ -61,7 +61,7 @@ INCREMENT BY 1;
 USE Olist_DW
 SELECT NEXT VALUE FOR product_key AS product_key, Product_category_name_english AS 'product'
 INTO product
-FROM Olist.dbo.category
+FROM Olist_Orders.dbo.category
 WHERE Product_category_name_english != 'Product_category_name_english';
 
 -- Select business_segment from Olist marketing closed_deals
@@ -75,7 +75,7 @@ FROM (SELECT DISTINCT business_segment
 --SELECT * FROM product;
 
 SELECT DISTINCT geolocation_city, geolocation_state, geolocation_zip_code_prefix
-FROM olist.dbo.geolocation;
+FROM Olist_Orders.dbo.geolocation;
 
 -- Code to setup the location table within the warehouse
 --DROP SEQUENCE location_key
@@ -92,51 +92,83 @@ SELECT NEXT VALUE FOR location_key AS location_key,
 gl.geolocation_city AS 'city', gl.geolocation_state AS 'state', gl.geolocation_zip_code_prefix AS 'zip'
 INTO location
 FROM (SELECT DISTINCT geolocation_city, geolocation_state, geolocation_zip_code_prefix
-	  FROM Olist.dbo.geolocation) gl;
+	  FROM Olist_Orders.dbo.geolocation) gl;
+
+-- Code to setup the location table within the warehouse
+--DROP SEQUENCE origin_key
+CREATE SEQUENCE origin_key
+START WITH 1
+INCREMENT BY 1;
+
+--DROP SEQUENCE lead_type_key
+CREATE SEQUENCE lead_type_key
+START WITH 1
+INCREMENT BY 1;
+
+--DROP SEQUENCE business_type_key
+CREATE SEQUENCE business_type_key
+START WITH 1
+INCREMENT BY 1;
+
+--DROP TABLE origin
+-- Setup marketing dimension tables
+SELECT NEXT VALUE FOR origin_key AS 'origin_key', l.origin
+INTO origin
+FROM (SELECT DISTINCT origin FROM Olist_Marketing.dbo.leads) l
+
+--DROP TABLE lead_type
+SELECT NEXT VALUE FOR lead_type_key AS 'lead_type_key', cd.lead_type
+INTO lead_type
+FROM (SELECT DISTINCT lead_type FROM Olist_Marketing.dbo.closed_deals) cd
+
+--DROP TABLE business_type
+SELECT NEXT VALUE FOR business_type_key AS 'business_type_key', cd.lead_type 
+INTO business_type
+FROM (SELECT DISTINCT business_type FROM Olist_Marketing.dbo.closed_deals) cd
 
 
 --SELECT * FROM location;
 
 --DROP TABLE orders
 -- Gathers the initial data from the Olist database and insert it into a table called orders in the Olist_DW database
--- does a convert on the time.datekey from INT to DATE
+-- does a convert on the time.date_key from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
 -- filters out any canceled orders and only orders earlier than 2019
 USE Olist_DW
-SELECT t.DateKey, l.location_key, p2.product_key, oi.seller_id, 
+SELECT t.date_key, l.location_key, p2.product_key, oi.seller_id, 
 SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
 INTO orders
-FROM Olist.dbo.orders o
-INNER JOIN Olist.dbo.order_items oi ON oi.order_id = o.order_id
-INNER JOIN Olist.dbo.products p ON p.product_id = oi.product_id
-INNER JOIN Olist.dbo.category c ON c.product_category_name = p.product_category_name
+FROM Olist_Orders.dbo.orders o
+INNER JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
+INNER JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
+INNER JOIN Olist_Orders.dbo.category c ON c.product_category_name = p.product_category_name
 INNER JOIN product p2 ON p2.product = c.Product_category_name_english
-INNER JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 INNER JOIN location l ON l.zip = s.seller_zip_code_prefix AND l.city = s.seller_city
 WHERE o.order_status != 'canceled' AND order_purchase_timestamp < '20190101'
-GROUP BY t.DateKey, l.location_key, p2.product_key, oi.seller_id;
+GROUP BY t.date_key, l.location_key, p2.product_key, oi.seller_id;
 
 --SELECT * FROM orders;
 
 --DROP conversions
 -- select data from the marketing db to move into the data warehouse
--- does a convert on the time.datekey from INT to DATE
+-- does a convert on the time.date_key from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
 -- only selects rows that have an origin, not null or unknown
 USE Olist_DW
 SELECT DISTINCT
-t.DateKey, p.product_key, l.origin, cd.lead_type, cd.business_type,
+t.date_key, p.product_key, l.origin, cd.lead_type, cd.business_type,
 AVG(DATEDIFF(HOUR, l.first_contact_date, cd.won_date)) AS 'avg_hrs_convert'
 INTO conversions
 FROM Olist_Marketing.dbo.leads l
 INNER JOIN Olist_Marketing.dbo.closed_deals cd ON l.mql_id = cd.mql_id
-INNER JOIN Olist.dbo.sellers s ON s.seller_id = cd.seller_id
-INNER JOIN Olist.dbo.order_items oi ON oi.seller_id = s.seller_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,cd.won_date,112)
+INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = cd.seller_id
+INNER JOIN Olist_Orders.dbo.order_items oi ON oi.seller_id = s.seller_id
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,cd.won_date,112)
 INNER JOIN product p ON p.product = cd.business_segment
 WHERE l.origin IS NOT NULL AND l.origin != 'unknown'
-GROUP BY t.DateKey, p.product_key, l.origin, cd.lead_type, cd.business_type
+GROUP BY t.date_key, p.product_key, l.origin, cd.lead_type, cd.business_type
 
 -- delete the single row with a negative conversion hours
 DELETE FROM conversions
@@ -146,7 +178,7 @@ WHERE avg_hrs_convert < 1
 
 ----------------------------------------------
 -- Create indexes for the top sellers by volume
-USE Olist
+USE Olist_Orders
 CREATE INDEX orders_purchase_id_indx
 ON orders ([order_purchase_timestamp]) INCLUDE ([order_id]);
 
@@ -159,10 +191,10 @@ ON products (product_id) INCLUDE ([product_category_name]);
 -- Create indexes for the orders table of the data warehouse total units and revenue queries
 USE Olist_DW
 CREATE INDEX orders_total_units_indx
-ON orders ([DateKey]) INCLUDE ([product_category], [seller_id], seller_state, [Units_Sold]);
+ON orders ([date_key]) INCLUDE ([product_category], [seller_id], seller_state, [Units_Sold]);
 
 CREATE INDEX orders_total_revenue_indx
-ON orders ([DateKey]) INCLUDE ([product_category], [seller_id], seller_state, [Total_value]);
+ON orders ([date_key]) INCLUDE ([product_category], [seller_id], seller_state, [Total_value]);
 
 ------------------
 -- Turn on statistics to measure performance between OLTP DB and DW
@@ -172,14 +204,14 @@ SET STATISTICS TIME ON
 
 -- Top 5 seller id, seller state, product category by volume
 -- Original database query
-USE Olist
+USE Olist_Orders
 SELECT TOP 5 t.year, s.seller_id, s.seller_state, c.product_category_name_english, COUNT(product_category_name_english)  AS 'Total_Units'--, SUM(oi.Units_Sold)
 FROM orders o
 INNER JOIN order_items oi ON oi.order_id = o.order_id
 INNER JOIN products p ON p.product_id = oi.product_id
 INNER JOIN category c ON c.product_category_name = p.product_category_name
 INNER JOIN sellers s ON s.seller_id = oi.seller_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 WHERE t.Year = 2018
 GROUP BY t.Year, s.seller_id, s.seller_state, c.product_category_name_english
 ORDER BY Total_Units DESC;
@@ -188,21 +220,21 @@ ORDER BY Total_Units DESC;
 USE Olist_DW
 SELECT TOP 5 t.Year, o.seller_id, o.seller_state, o.product_category, SUM(o.Units_Sold) AS 'Total_Units'
 FROM orders o
-JOIN time_period t ON t.DateKey = o.DateKey
+JOIN time_period t ON t.date_key = o.date_key
 WHERE t.Year = 2018
 GROUP BY t.Year, o.seller_id, o.seller_state, o.product_category
 ORDER BY Total_Units DESC;
 
 -- Top 5 seller id, seller state, product category by revenue
 -- Original database query
-USE Olist
+USE Olist_Orders
 SELECT TOP 5 t.year, s.seller_id, s.seller_state, c.product_category_name_english, ROUND(SUM(oi.price), 2) AS 'Total_Revenue'
 FROM orders o
 INNER JOIN order_items oi ON oi.order_id = o.order_id
 INNER JOIN products p ON p.product_id = oi.product_id
 INNER JOIN category c ON c.product_category_name = p.product_category_name
 INNER JOIN sellers s ON s.seller_id = oi.seller_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 WHERE t.Year = 2018
 GROUP BY t.Year, s.seller_id, s.seller_state, c.product_category_name_english
 ORDER BY Total_Revenue DESC;
@@ -211,7 +243,7 @@ ORDER BY Total_Revenue DESC;
 USE Olist_DW
 SELECT TOP 5 t.Year, o.seller_id, o.seller_state, o.product_category, ROUND(SUM(o.Total_Value), 2) AS 'Total_Revenue'
 FROM orders o
-JOIN time_period t ON t.DateKey = o.DateKey
+JOIN time_period t ON t.date_key = o.date_key
 WHERE t.Year = 2018
 GROUP BY t.Year, o.seller_id, o.seller_state, o.product_category
 ORDER BY Total_Revenue DESC;
@@ -222,7 +254,7 @@ USE Olist_Marketing
 SELECT TOP 5 t.year, l.origin, cd.lead_type, AVG(DATEDIFF(HOUR, l.first_contact_date, cd.won_date)) AS 'avg_hrs_convert'
 FROM closed_deals cd
 INNER JOIN leads l ON l.mql_id = cd.mql_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,cd.won_date,112)
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,cd.won_date,112)
 GROUP BY t.year, l.origin, cd.lead_type
 ORDER BY avg_hrs_convert ASC;
 
@@ -230,7 +262,7 @@ ORDER BY avg_hrs_convert ASC;
 USE Olist_DW
 SELECT TOP 5 t.year, c.origin, c.lead_type, MIN(avg_hrs_convert)-- AS 'avg_hrs_convert'
 FROM conversions c
-INNER JOIN time_period t ON t.DateKey = c.DateKey 
+INNER JOIN time_period t ON t.date_key = c.date_key 
 GROUP BY t.year, c.origin, c.lead_type--, avg_hrs_convert
 ORDER BY avg_hrs_convert ASC;
 
@@ -242,7 +274,7 @@ SELECT * FROM conversions
 --WHERE order_purchase_timestamp > '20181231'
 
 -- Create fake 2019 orders data
-USE Olist
+USE Olist_Orders
 INSERT INTO orders
 VALUES
 ('e481f51cbdc54678b7cc49136f2d6af7', '9ef432eb6251297304e76186b10a928d', 'delivered', '20190101 12:30:00', '20190102 12:30:00', '20190103 12:30:00', '20190104 12:30:00', '20190105 12:30:00'),
@@ -270,24 +302,24 @@ VALUES
 -- dates are hard coded, but with dynamic SQL using date add, diff and get date the code can always grab
 -- only records that were created yesterday
 USE Olist_DW
-INSERT INTO orders (DateKey, product_category, seller_id, seller_city, seller_state, total_value, units_sold)
-SELECT t.DateKey, c.product_category_name_english AS 'product_category', oi.seller_id, 
+INSERT INTO orders (date_key, product_category, seller_id, seller_city, seller_state, total_value, units_sold)
+SELECT t.date_key, c.product_category_name_english AS 'product_category', oi.seller_id, 
 CASE
 	WHEN s.seller_city LIKE 'sao pau%' OR seller_city LIKE 'sao palu%'
 	THEN 'São Paulo'
 	ELSE s.seller_city
 END AS 'seller_city',
 s.seller_state, SUM(oi.price) AS 'Total_Value', COUNT(oi.product_id) AS 'Units_Sold'
-FROM Olist.dbo.orders o
-JOIN Olist.dbo.order_items oi ON oi.order_id = o.order_id
-JOIN Olist.dbo.products p ON p.product_id = oi.product_id
-JOIN Olist.dbo.category c ON c.product_category_name = p.product_category_name
-JOIN Olist.dbo.sellers s ON s.seller_id = oi.seller_id
-JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+FROM Olist_Orders.dbo.orders o
+JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
+JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
+JOIN Olist_Orders.dbo.category c ON c.product_category_name = p.product_category_name
+JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
+JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 WHERE o.order_status != 'canceled' AND order_purchase_timestamp >= '20190101 00:00:00' AND order_purchase_timestamp < '20190102 00:00:00'
 --order_purchase_timestamp >= DATEADD(DAY, DATEDIFF(DAY,1,GETDATE()),0)
 --AND order_purchase_timestamp < DATEADD(DAY, DATEDIFF(DAY,0,GETDATE()),0)
-GROUP BY t.DateKey, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;
+GROUP BY t.date_key, o.order_purchase_timestamp, c.product_category_name_english, oi.seller_id, s.seller_city, s.seller_state;
 
 SELECT *
 FROM orders
