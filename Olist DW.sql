@@ -279,43 +279,40 @@ SELECT * FROM conversions
 -- Remove fake data
 --DELETE FROM Olist_Orders.dbo.orders
 --WHERE order_purchase_timestamp > '20181231'
+--DELETE FROM Olist_Orders.dbo.order_items
+--WHERE shipping_limit_date = '20190105 12:30:00'
 
 -- Create fake 2019 orders data
 USE Olist_Orders
 INSERT INTO orders
 VALUES
-('e481f51cbdc54678b7cc49136f2d6af7', '9ef432eb6251297304e76186b10a928d', 'delivered', '20190101 12:30:00', '20190102 12:30:00', '20190103 12:30:00', '20190104 12:30:00', '20190105 12:30:00'),
-('53cdb2fc8bc7dce0b6741e2150273451', 'b0830fb4747a6c6d20dea0b8c802d7ef', 'delivered', '20190102 12:30:00', '20190103 12:30:00', '20190104 12:30:00', '20190105 12:30:00', '20190106 12:30:00'),
-('47770eb9100c2d0c44946d9cf07ec65d', '41ce2a54c0b03bf3443c3d931a367089', 'delivered', '20190103 12:30:00', '20190104 12:30:00', '20190105 12:30:00', '20190106 12:30:00', '20190107 12:30:00'),
-('949d5b44dbf5de918fe9c16f97b45f8a', 'f88197465ea7920adcdbec7375364d82', 'delivered', '20190104 12:30:00', '20190105 12:30:00', '20190106 12:30:00', '20190107 12:30:00', '20190108 12:30:00'),
-('ad21c59c0840e6cb83a9ceb5573f8159', '8ab97904e6daea8866dbdbc4fb7aad2c', 'delivered', '20190105 12:30:00', '20190106 12:30:00', '20190107 12:30:00', '20190108 12:30:00', '20190201 12:30:00'),
-('a4591c265e18cb1dcee52889e2d8acc3', '503740e9ca751ccdda7ba28e9ab8f608', 'delivered', '20190106 12:30:00', '20190107 12:30:00', '20190108 12:30:00', '20190109 12:30:00', '20190211 12:30:00'),
-('136cce7faa42fdb2cefd53fdc79a6098', 'ed0271e0b7da060a393796590e7b737a', 'delivered', '20190107 12:30:00', '20190108 12:30:00', '20190109 12:30:00', '20190112 12:30:00', '20190203 12:30:00'),
-('6514b8ad8028c9f2cc2374ded245783f', '9bdf08b4b3b52b5526ff42d37d47f222', 'delivered', '20190108 12:30:00', '20190109 12:30:00', '20190110 12:30:00', '20190113 12:30:00', '20190119 12:30:00'),
-('76c6e866289321a7c93b82b54852dc33', 'f54a9f0e6b351c431402b8461ea51999', 'delivered', '20190109 12:30:00', '20190110 12:30:00', '20190111 12:30:00', '20190115 12:30:00', '20190119 12:30:00'),
-('e69bfb5eb88e0ed6a785585b27e16dbf', '494dded5b201313c64ed7f100595b95c', 'delivered', '20190110 12:30:00', '20190111 12:30:00', '20190112 12:30:00', '20190116 12:30:00', '20190119 12:30:00'),
-('e6ce16cb79ec1d90b1da9085a6118aeb', '31ad1d1b63eb9962463f764d4e6e0c9d', 'delivered', '20190111 12:30:00', '20190112 12:30:00', '20190113 12:30:00', '20190117 12:30:00', '20190122 12:30:00'),
-('34513ce0c4fab462a55830c0989c7edb', '7711cf624183d843aafe81855097bc37', 'delivered', '20190112 12:30:00', '20190113 12:30:00', '20190114 12:30:00', '20190118 12:30:00', '20190123 12:30:00'),
-('82566a660a982b15fb86e904c8d32918', 'd3e3b74c766bc6214e0c830b17ee2341', 'delivered', '20190113 12:30:00', '20190114 12:30:00', '20190115 12:30:00', '20190120 12:30:00', '20190125 12:30:00'),
-('5ff96c15d0b717ac6ad1f3d77225a350', '19402a48fe860416adf93348aba37740', 'delivered', '20190114 12:30:00', '20190115 12:30:00', '20190116 12:30:00', '20190122 12:30:00', '20190127 12:30:00'),
-('432aaf21d85167c2c86ec9448c4e42cc', '3df704f53d3f1d4818840b34ec672a9f', 'delivered', '20190115 12:30:00', '20190116 12:30:00', '20190117 12:30:00', '20190123 12:30:00', '20190126 12:30:00'),
-('dcb36b511fcac050b97cd5c05de84dc3', '3b6828a50ffe546942b7a473d70ac0fc', 'delivered', '20190116 12:30:00', '20190117 12:30:00', '20190118 12:30:00', '20190125 12:30:00', '20190126 12:30:00'),
-('403b97836b0c04a622354cf531062e5f', '738b086814c6fcc74b8cc583f8516ee3', 'delivered', '20190117 12:30:00', '20190118 12:30:00', '20190119 12:30:00', '20190130 12:30:00', '20190205 12:30:00'),
-('116f0b09343b49556bbad5f35bee0cdf', '3187789bec990987628d7a9beb4dd6ac', 'delivered', '20190118 12:30:00', '20190119 12:30:00', '20190120 12:30:00', '20190129 12:30:00', '20190204 12:30:00'),
-('85ce859fd6dc634de8d2f1e290444043', '059f7fc5719c7da6cbafe370971a8d70', 'delivered', '20190119 12:30:00', '20190120 12:30:00', '20190121 12:30:00', '20190131 12:30:00', '20190211 12:30:00')
+('023345456754dfg67875647032168abc', '9ef432eb6251297304e76186b10a928d', 'delivered', '20190101 12:30:00', '20190102 12:30:00', '20190103 12:30:00', '20190104 12:30:00', '20190105 12:30:00'),
+('rsfdgrtgh455643hhtkiusdng2345246', 'b0830fb4747a6c6d20dea0b8c802d7ef', 'delivered', '20190102 12:30:00', '20190103 12:30:00', '20190104 12:30:00', '20190105 12:30:00', '20190106 12:30:00'),
+('sdafgfdh45647fgh4564567hge456453', '41ce2a54c0b03bf3443c3d931a367089', 'delivered', '20190103 12:30:00', '20190104 12:30:00', '20190105 12:30:00', '20190106 12:30:00', '20190107 12:30:00'),
+('2343dfg34543g3476jh576682tsrgrfg', 'f88197465ea7920adcdbec7375364d82', 'delivered', '20190104 12:30:00', '20190105 12:30:00', '20190106 12:30:00', '20190107 12:30:00', '20190108 12:30:00'),
+('34565467tr453646vbdfg345346dgdrt', '8ab97904e6daea8866dbdbc4fb7aad2c', 'delivered', '20190105 12:30:00', '20190106 12:30:00', '20190107 12:30:00', '20190108 12:30:00', '20190201 12:30:00'),
+('45654ydfgfdg45er65fdgh5664fthb54', '503740e9ca751ccdda7ba28e9ab8f608', 'delivered', '20190106 12:30:00', '20190107 12:30:00', '20190108 12:30:00', '20190109 12:30:00', '20190211 12:30:00');
+
+INSERT INTO order_items
+VALUES
+('023345456754dfg67875647032168abc', 1, '4244733e06e7ecb4970a6e2683c13e61', '48436dade18ac8b2bce089ec2a041202', '20190105 12:30:00', 58.9, 13.29),
+('rsfdgrtgh455643hhtkiusdng2345246', 1, 'e5f2d52b802189ee658865ca93d83a8f', 'dd7ddc04e1b6c2c614352b383efe2d36', '20190105 12:30:00', 239.9, 39),
+('sdafgfdh45647fgh4564567hge456453', 1, 'c777355d18b72b67abbeef9df44fd0fd', 'dd7ddc04e1b6c2c614352b383efe2d36', '20190105 12:30:00', 199, 17.8),
+('2343dfg34543g3476jh576682tsrgrfg', 1, '7634da152a4610f1595efa32f14722fc', '5b51032eddd242adc84c38acab88f23d', '20190105 12:30:00', 12.99, 12.79),
+('34565467tr453646vbdfg345346dgdrt', 1, 'ac6c3623068f30de03045865e4e10089', '9d7a1d34a5052409006425275ba1c2b4', '20190105 12:30:00', 199.9, 11.85),
+('45654ydfgfdg45er65fdgh5664fthb54', 1, 'ef92defde845ab8450f9d70c526ef70f', 'df560393f3a51e74553ab94004ba5c87', '20190105 12:30:00', 239.9, 11.4);
+
+
+--FAKE DATA FOR order_items
+SELECT TOP 10 * 
+FROM order_items
 
 -- Used to find new orders from the previous day and insert them into the data warehouse
 -- filters greater than or equal to yesterday at midnight until less than today at midnight
 -- dates are hard coded, but with dynamic SQL using date add, diff and get date the code can always grab
 -- only records that were created yesterday
 
-DECLARE @start_date DATE,
-		@end_date DATE
-
-SELECT @start_date = '20190101 00:00:00', @end_date = '20190102 00:00:00'
-
 --USE Olist_DW
---INSERT INTO Olist_DW.dbo.orders (date_key, location_key, product_key, seller_id, sales_total, sales_quantity)
 SELECT t.date_key, l.location_key, p2.product_key, oi.seller_id, 
 SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
 FROM Olist_Orders.dbo.orders o
@@ -326,8 +323,22 @@ INNER JOIN Olist_DW.dbo.product p2 ON p2.product = c.Product_category_name_engli
 INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
 INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 INNER JOIN Olist_DW.dbo.location l ON l.zip = s.seller_zip_code_prefix AND l.city = s.seller_city
-WHERE o.order_status != 'canceled' AND 
-order_purchase_timestamp >= @start_date AND order_purchase_timestamp < @end_date
---order_purchase_timestamp >= DATEADD(DAY, DATEDIFF(DAY,1,GETDATE()),0)
---AND order_purchase_timestamp < DATEADD(DAY, DATEDIFF(DAY,0,GETDATE()),0)
+WHERE o.order_status != 'canceled'
 GROUP BY t.date_key, l.location_key, p2.product_key, oi.seller_id;
+
+-- view orders data greater than 2018
+USE Olist_Orders
+SELECT order_purchase_timestamp 
+FROM orders
+WHERE order_purchase_timestamp > '20181231'
+
+USE Olist_Orders
+SELECT * 
+FROM orders
+WHERE order_purchase_timestamp > '20181231'
+
+-- view orders data greater than 2018
+USE Olist_DW
+SELECT * 
+FROM orders
+WHERE Date_Key > '20181231'
