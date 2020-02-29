@@ -138,6 +138,11 @@ INNER JOIN product p ON p.product = cd.business_segment
 WHERE l.origin IS NOT NULL AND l.origin != 'unknown'
 GROUP BY t.DateKey, p.product_key, l.origin, cd.lead_type, cd.business_type
 
+-- delete the single row with a negative conversion hours
+DELETE FROM conversions
+WHERE avg_hrs_convert < 1
+
+--SELECT * FROM conversions;
 
 ----------------------------------------------
 -- Create indexes for the top sellers by volume
@@ -170,11 +175,11 @@ SET STATISTICS TIME ON
 USE Olist
 SELECT TOP 5 t.year, s.seller_id, s.seller_state, c.product_category_name_english, COUNT(product_category_name_english)  AS 'Total_Units'--, SUM(oi.Units_Sold)
 FROM orders o
-JOIN order_items oi ON oi.order_id = o.order_id
-JOIN products p ON p.product_id = oi.product_id
-JOIN category c ON c.product_category_name = p.product_category_name
-JOIN sellers s ON s.seller_id = oi.seller_id
-JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN order_items oi ON oi.order_id = o.order_id
+INNER JOIN products p ON p.product_id = oi.product_id
+INNER JOIN category c ON c.product_category_name = p.product_category_name
+INNER JOIN sellers s ON s.seller_id = oi.seller_id
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 WHERE t.Year = 2018
 GROUP BY t.Year, s.seller_id, s.seller_state, c.product_category_name_english
 ORDER BY Total_Units DESC;
@@ -193,11 +198,11 @@ ORDER BY Total_Units DESC;
 USE Olist
 SELECT TOP 5 t.year, s.seller_id, s.seller_state, c.product_category_name_english, ROUND(SUM(oi.price), 2) AS 'Total_Revenue'
 FROM orders o
-JOIN order_items oi ON oi.order_id = o.order_id
-JOIN products p ON p.product_id = oi.product_id
-JOIN category c ON c.product_category_name = p.product_category_name
-JOIN sellers s ON s.seller_id = oi.seller_id
-JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+INNER JOIN order_items oi ON oi.order_id = o.order_id
+INNER JOIN products p ON p.product_id = oi.product_id
+INNER JOIN category c ON c.product_category_name = p.product_category_name
+INNER JOIN sellers s ON s.seller_id = oi.seller_id
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 WHERE t.Year = 2018
 GROUP BY t.Year, s.seller_id, s.seller_state, c.product_category_name_english
 ORDER BY Total_Revenue DESC;
@@ -211,6 +216,25 @@ WHERE t.Year = 2018
 GROUP BY t.Year, o.seller_id, o.seller_state, o.product_category
 ORDER BY Total_Revenue DESC;
 
+
+---------------------------
+USE Olist_Marketing
+SELECT TOP 5 t.year, l.origin, cd.lead_type, AVG(DATEDIFF(HOUR, l.first_contact_date, cd.won_date)) AS 'avg_hrs_convert'
+FROM closed_deals cd
+INNER JOIN leads l ON l.mql_id = cd.mql_id
+INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.DateKey,112)) = CONVERT(DATE,cd.won_date,112)
+GROUP BY t.year, l.origin, cd.lead_type
+ORDER BY avg_hrs_convert ASC;
+
+-- Find the top 5 average fastest origin and lead types to convert through a marketing funnel
+USE Olist_DW
+SELECT TOP 5 t.year, c.origin, c.lead_type, MIN(avg_hrs_convert)-- AS 'avg_hrs_convert'
+FROM conversions c
+INNER JOIN time_period t ON t.DateKey = c.DateKey 
+GROUP BY t.year, c.origin, c.lead_type--, avg_hrs_convert
+ORDER BY avg_hrs_convert ASC;
+
+SELECT * FROM conversions
 
 ---------
 -- Remove fake data
