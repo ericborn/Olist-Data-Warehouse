@@ -94,6 +94,8 @@ INTO location
 FROM (SELECT DISTINCT geolocation_city, geolocation_state, geolocation_zip_code_prefix
 	  FROM Olist_Orders.dbo.geolocation) gl;
 
+--SELECT * FROM location;
+
 -- Code to setup the location table within the warehouse
 --DROP SEQUENCE origin_key
 CREATE SEQUENCE origin_key
@@ -114,20 +116,22 @@ INCREMENT BY 1;
 -- Setup marketing dimension tables
 SELECT NEXT VALUE FOR origin_key AS 'origin_key', l.origin
 INTO origin
-FROM (SELECT DISTINCT origin FROM Olist_Marketing.dbo.leads) l
+FROM (SELECT DISTINCT origin FROM Olist_Marketing.dbo.leads) l;
 
 --DROP TABLE lead_type
 SELECT NEXT VALUE FOR lead_type_key AS 'lead_type_key', cd.lead_type
 INTO lead_type
-FROM (SELECT DISTINCT lead_type FROM Olist_Marketing.dbo.closed_deals) cd
+FROM (SELECT DISTINCT lead_type FROM Olist_Marketing.dbo.closed_deals) cd;
 
 --DROP TABLE business_type
-SELECT NEXT VALUE FOR business_type_key AS 'business_type_key', cd.lead_type 
+SELECT NEXT VALUE FOR business_type_key AS 'business_type_key', cd.business_type 
 INTO business_type
-FROM (SELECT DISTINCT business_type FROM Olist_Marketing.dbo.closed_deals) cd
+FROM (SELECT DISTINCT business_type FROM Olist_Marketing.dbo.closed_deals) cd;
 
+--SELECT * FROM origin;
+--SELECT * FROM lead_type;
+--SELECT * FROM business_type;
 
---SELECT * FROM location;
 
 --DROP TABLE orders
 -- Gathers the initial data from the Olist database and insert it into a table called orders in the Olist_DW database
@@ -151,14 +155,14 @@ GROUP BY t.date_key, l.location_key, p2.product_key, oi.seller_id;
 
 --SELECT * FROM orders;
 
---DROP conversions
+--DROP TABLE conversions
 -- select data from the marketing db to move into the data warehouse
 -- does a convert on the time.date_key from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
 -- only selects rows that have an origin, not null or unknown
 USE Olist_DW
 SELECT DISTINCT
-t.date_key, p.product_key, l.origin, cd.lead_type, cd.business_type,
+t.date_key, p.product_key, o.origin_key, lt.lead_type_key, bt.business_type_key,
 AVG(DATEDIFF(HOUR, l.first_contact_date, cd.won_date)) AS 'avg_hrs_convert'
 INTO conversions
 FROM Olist_Marketing.dbo.leads l
@@ -167,8 +171,11 @@ INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = cd.seller_id
 INNER JOIN Olist_Orders.dbo.order_items oi ON oi.seller_id = s.seller_id
 INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,cd.won_date,112)
 INNER JOIN product p ON p.product = cd.business_segment
+INNER JOIN origin o ON o.origin = l.origin
+INNER JOIN lead_type lt ON lt.lead_type = cd.lead_type
+INNER JOIN business_type bt ON bt.business_type = cd.business_type
 WHERE l.origin IS NOT NULL AND l.origin != 'unknown'
-GROUP BY t.date_key, p.product_key, l.origin, cd.lead_type, cd.business_type
+GROUP BY t.date_key, p.product_key, o.origin_key, lt.lead_type_key, bt.business_type_key
 
 -- delete the single row with a negative conversion hours
 DELETE FROM conversions
