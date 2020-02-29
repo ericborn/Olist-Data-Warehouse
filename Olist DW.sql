@@ -74,6 +74,31 @@ FROM (SELECT DISTINCT business_segment
 
 SELECT * FROM product
 
+SELECT DISTINCT geolocation_city, geolocation_state, geolocation_zip_code_prefix
+FROM olist.dbo.geolocation
+
+-- Code to setup the location table within the warehouse
+--DROP SEQUENCE location_key
+CREATE SEQUENCE location_key
+START WITH 1
+INCREMENT BY 1;
+
+--DROP TABLE location
+-- Select product names from Olist category
+-- move into product table in the warehouse
+-- filters out a header row that slipped in on the import
+USE Olist_DW
+SELECT NEXT VALUE FOR location_key AS location_key,
+gl.geolocation_city, gl.geolocation_state, gl.geolocation_zip_code_prefix
+INTO location
+FROM (SELECT DISTINCT geolocation_city, geolocation_state, geolocation_zip_code_prefix
+	  FROM Olist.dbo.geolocation) gl
+
+
+SELECT * 
+FROM location
+ORDER BY location_key
+
 --DROP TABLE orders
 
 -- Gathers the initial data from the Olist database and insert it into a table called orders in the Olist_DW database
