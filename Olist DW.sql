@@ -137,7 +137,7 @@ FROM (SELECT DISTINCT business_type FROM Olist_Marketing.dbo.closed_deals) cd;
 -- Gathers the initial data from the Olist database and insert it into a table called orders in the Olist_DW database
 -- does a convert on the time.date_key from INT to DATE
 -- also converts orders order_purchase_timestamp from DATETIME to DATE
--- filters out any canceled orders and only orders earlier than 2019
+-- filters out any canceled orders and only orders earlier than 2019 for SSIS demonstration purposes
 USE Olist_DW
 SELECT t.date_key, l.location_key, p2.product_key, oi.seller_id, 
 SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
@@ -277,7 +277,7 @@ SELECT * FROM conversions
 
 ---------
 -- Remove fake data
---DELETE FROM orders
+--DELETE FROM Olist_Orders.dbo.orders
 --WHERE order_purchase_timestamp > '20181231'
 
 -- Create fake 2019 orders data
@@ -308,8 +308,14 @@ VALUES
 -- filters greater than or equal to yesterday at midnight until less than today at midnight
 -- dates are hard coded, but with dynamic SQL using date add, diff and get date the code can always grab
 -- only records that were created yesterday
-USE Olist_DW
-INSERT INTO orders (date_key, location_key, product_key, seller_id, sales_total, sales_quantity)
+
+DECLARE @start_date DATE,
+		@end_date DATE
+
+SELECT @start_date = '20190101 00:00:00', @end_date = '20190102 00:00:00'
+
+--USE Olist_DW
+--INSERT INTO Olist_DW.dbo.orders (date_key, location_key, product_key, seller_id, sales_total, sales_quantity)
 SELECT t.date_key, l.location_key, p2.product_key, oi.seller_id, 
 SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
 FROM Olist_Orders.dbo.orders o
@@ -320,7 +326,8 @@ INNER JOIN Olist_DW.dbo.product p2 ON p2.product = c.Product_category_name_engli
 INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
 INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 INNER JOIN Olist_DW.dbo.location l ON l.zip = s.seller_zip_code_prefix AND l.city = s.seller_city
-WHERE o.order_status != 'canceled' AND order_purchase_timestamp >= '20190101 00:00:00' AND order_purchase_timestamp < '20190102 00:00:00'
+WHERE o.order_status != 'canceled' AND 
+order_purchase_timestamp >= @start_date AND order_purchase_timestamp < @end_date
 --order_purchase_timestamp >= DATEADD(DAY, DATEDIFF(DAY,1,GETDATE()),0)
 --AND order_purchase_timestamp < DATEADD(DAY, DATEDIFF(DAY,0,GETDATE()),0)
 GROUP BY t.date_key, l.location_key, p2.product_key, oi.seller_id;
