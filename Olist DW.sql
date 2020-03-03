@@ -3,6 +3,7 @@ Eric Born
 Oline data warehouse project
 */
 
+-- Table cleanup code
 -- Rename CSV imported table names for the business transactions data
 USE Olist_Orders
 EXEC sp_rename 'olist_customers_dataset', 'customers'
@@ -22,18 +23,19 @@ EXEC sp_rename 'olist_marketing_qualified_leads_dataset', 'leads'
 
 -- script to output database schema
 -- Provided by lucidchart.com with their import data feature
-SELECT 'sqlserver' dbms,t.TABLE_CATALOG,t.TABLE_SCHEMA,t.TABLE_NAME,c.COLUMN_NAME,c.ORDINAL_POSITION,c.DATA_TYPE,
-c.CHARACTER_MAXIMUM_LENGTH,n.CONSTRAINT_TYPE
-FROM INFORMATION_SCHEMA.TABLES t 
-LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_CATALOG=c.TABLE_CATALOG AND t.TABLE_SCHEMA=c.TABLE_SCHEMA AND t.TABLE_NAME=c.TABLE_NAME 
-LEFT JOIN(INFORMATION_SCHEMA.KEY_COLUMN_USAGE k 
-JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS n ON k.CONSTRAINT_CATALOG=n.CONSTRAINT_CATALOG 
-AND k.CONSTRAINT_SCHEMA=n.CONSTRAINT_SCHEMA AND k.CONSTRAINT_NAME=n.CONSTRAINT_NAME 
-LEFT JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS r ON k.CONSTRAINT_CATALOG=r.CONSTRAINT_CATALOG AND k.CONSTRAINT_SCHEMA=r.CONSTRAINT_SCHEMA 
-AND k.CONSTRAINT_NAME=r.CONSTRAINT_NAME)ON c.TABLE_CATALOG=k.TABLE_CATALOG AND c.TABLE_SCHEMA=k.TABLE_SCHEMA AND c.TABLE_NAME=k.TABLE_NAME AND c.COLUMN_NAME=k.COLUMN_NAME 
-WHERE t.TABLE_TYPE='BASE TABLE';
+--SELECT 'sqlserver' dbms,t.TABLE_CATALOG,t.TABLE_SCHEMA,t.TABLE_NAME,c.COLUMN_NAME,c.ORDINAL_POSITION,c.DATA_TYPE,
+--c.CHARACTER_MAXIMUM_LENGTH,n.CONSTRAINT_TYPE
+--FROM INFORMATION_SCHEMA.TABLES t 
+--LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_CATALOG=c.TABLE_CATALOG AND t.TABLE_SCHEMA=c.TABLE_SCHEMA AND t.TABLE_NAME=c.TABLE_NAME 
+--LEFT JOIN(INFORMATION_SCHEMA.KEY_COLUMN_USAGE k 
+--JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS n ON k.CONSTRAINT_CATALOG=n.CONSTRAINT_CATALOG 
+--AND k.CONSTRAINT_SCHEMA=n.CONSTRAINT_SCHEMA AND k.CONSTRAINT_NAME=n.CONSTRAINT_NAME 
+--LEFT JOIN INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS r ON k.CONSTRAINT_CATALOG=r.CONSTRAINT_CATALOG AND k.CONSTRAINT_SCHEMA=r.CONSTRAINT_SCHEMA 
+--AND k.CONSTRAINT_NAME=r.CONSTRAINT_NAME)ON c.TABLE_CATALOG=k.TABLE_CATALOG AND c.TABLE_SCHEMA=k.TABLE_SCHEMA AND c.TABLE_NAME=k.TABLE_NAME AND c.COLUMN_NAME=k.COLUMN_NAME 
+--WHERE t.TABLE_TYPE='BASE TABLE';
 
 ----------------------------
+-- DW Creation and ETL Code
 IF EXISTS 
    (
      SELECT name FROM master.dbo.sysdatabases 
@@ -141,7 +143,7 @@ FROM (SELECT DISTINCT business_type FROM Olist_Marketing.dbo.closed_deals) cd;
 USE Olist_DW
 SELECT t.date_key, l.location_key, p2.product_key, oi.seller_id, 
 SUM(oi.price) AS 'sales_total', COUNT(oi.product_id) AS 'sales_quantity'
-INTO orders
+INTO Olist_DW.dbo.orders
 FROM Olist_Orders.dbo.orders o
 INNER JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
 INNER JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
@@ -164,16 +166,16 @@ USE Olist_DW
 SELECT DISTINCT
 t.date_key, p.product_key, o.origin_key, lt.lead_type_key, bt.business_type_key,
 AVG(DATEDIFF(HOUR, l.first_contact_date, cd.won_date)) AS 'avg_hrs_convert'
-INTO conversions
+INTO Olist_Marketing.dbo.conversions
 FROM Olist_Marketing.dbo.leads l
 INNER JOIN Olist_Marketing.dbo.closed_deals cd ON l.mql_id = cd.mql_id
 INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = cd.seller_id
 INNER JOIN Olist_Orders.dbo.order_items oi ON oi.seller_id = s.seller_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,cd.won_date,112)
-INNER JOIN product p ON p.product = cd.business_segment
-INNER JOIN origin o ON o.origin = l.origin
-INNER JOIN lead_type lt ON lt.lead_type = cd.lead_type
-INNER JOIN business_type bt ON bt.business_type = cd.business_type
+INNER JOIN Olist_DW.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,cd.won_date,112)
+INNER JOIN Olist_DW.dbo.product p ON p.product = cd.business_segment
+INNER JOIN Olist_DW.dbo.origin o ON o.origin = l.origin
+INNER JOIN Olist_DW.dbo.lead_type lt ON lt.lead_type = cd.lead_type
+INNER JOIN Olist_DW.dbo.business_type bt ON bt.business_type = cd.business_type
 WHERE l.origin IS NOT NULL AND l.origin != 'unknown'
 GROUP BY t.date_key, p.product_key, o.origin_key, lt.lead_type_key, bt.business_type_key;
 
@@ -184,6 +186,7 @@ WHERE avg_hrs_convert < 1;
 --SELECT * FROM conversions;
 
 ----------------------------------------------
+-- Performance benchmarking code
 -- Create indexes for the top sellers by volume
 USE Olist_Orders
 CREATE INDEX orders_purchase_id_indx
@@ -278,6 +281,8 @@ ORDER BY avg_hrs_convert ASC;
 SELECT * FROM conversions
 
 ---------
+-- ETL testing coding
+
 -- Remove fake data
 --DELETE FROM Olist_Orders.dbo.orders
 --WHERE order_purchase_timestamp > '20181231'
