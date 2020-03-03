@@ -209,39 +209,39 @@ SET STATISTICS IO ON
 SET STATISTICS TIME ON
 --------------------
 
--- Top 5 seller id, seller state, product category by volume
--- Original database query
+-- Top 5 seller id, seller state, product category by volume from the orders database
 USE Olist_Orders
 SELECT TOP 5 t.year, s.seller_id, s.seller_state, c.product_category_name_english, COUNT(product_category_name_english)  AS 'Total_Units'--, SUM(oi.Units_Sold)
-FROM orders o
-INNER JOIN order_items oi ON oi.order_id = o.order_id
-INNER JOIN products p ON p.product_id = oi.product_id
-INNER JOIN category c ON c.product_category_name = p.product_category_name
-INNER JOIN sellers s ON s.seller_id = oi.seller_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+FROM Olist_Orders.dbo.orders o
+INNER JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
+INNER JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
+INNER JOIN Olist_Orders.dbo.category c ON c.product_category_name = p.product_category_name
+INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
+INNER JOIN Olist_Orders.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 WHERE t.Year = 2018
 GROUP BY t.Year, s.seller_id, s.seller_state, c.product_category_name_english
 ORDER BY Total_Units DESC;
 
 -- Data warehouse query
 USE Olist_DW
-SELECT TOP 5 t.Year, o.seller_id, o.seller_state, o.product_category, SUM(o.Units_Sold) AS 'Total_Units'
-FROM orders o
-JOIN time_period t ON t.date_key = o.date_key
+SELECT TOP 5 t.Year, o.seller_id, l.state, p.product, SUM(o.sales_quantity) AS 'Total_Units'
+FROM Olist_DW.dbo.orders o
+INNER JOIN Olist_DW.dbo.time_period t ON t.date_key = o.date_key
+INNER JOIN Olist_DW.dbo.location l ON l.location_key = o.location_key
+INNER JOIN Olist_DW.dbo.product p ON p.product_key = o.product_key
 WHERE t.Year = 2018
-GROUP BY t.Year, o.seller_id, o.seller_state, o.product_category
+GROUP BY t.Year, o.seller_id, l.state, p.product
 ORDER BY Total_Units DESC;
 
--- Top 5 seller id, seller state, product category by revenue
--- Original database query
+-- Top 5 seller id, seller state, product category by revenue from the orders database
 USE Olist_Orders
 SELECT TOP 5 t.year, s.seller_id, s.seller_state, c.product_category_name_english, ROUND(SUM(oi.price), 2) AS 'Total_Revenue'
-FROM orders o
-INNER JOIN order_items oi ON oi.order_id = o.order_id
-INNER JOIN products p ON p.product_id = oi.product_id
-INNER JOIN category c ON c.product_category_name = p.product_category_name
-INNER JOIN sellers s ON s.seller_id = oi.seller_id
-INNER JOIN time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
+FROM Olist_Orders.dbo.orders o
+INNER JOIN Olist_Orders.dbo.order_items oi ON oi.order_id = o.order_id
+INNER JOIN Olist_Orders.dbo.products p ON p.product_id = oi.product_id
+INNER JOIN Olist_Orders.dbo.category c ON c.product_category_name = p.product_category_name
+INNER JOIN Olist_Orders.dbo.sellers s ON s.seller_id = oi.seller_id
+INNER JOIN Olist_Orders.dbo.time_period t ON CONVERT(DATE,CONVERT(VARCHAR(8),t.date_key,112)) = CONVERT(DATE,o.order_purchase_timestamp,112)
 WHERE t.Year = 2018
 GROUP BY t.Year, s.seller_id, s.seller_state, c.product_category_name_english
 ORDER BY Total_Revenue DESC;
