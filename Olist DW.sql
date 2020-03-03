@@ -248,11 +248,13 @@ ORDER BY Total_Revenue DESC;
 
 -- Data warehouse query
 USE Olist_DW
-SELECT TOP 5 t.Year, o.seller_id, o.seller_state, o.product_category, ROUND(SUM(o.Total_Value), 2) AS 'Total_Revenue'
+SELECT TOP 5 t.Year, o.seller_id, l.state, p.product, ROUND(SUM(o.sales_total), 2) AS 'Total_Revenue'
 FROM orders o
-JOIN time_period t ON t.date_key = o.date_key
+INNER JOIN Olist_DW.dbo.time_period t ON t.date_key = o.date_key
+INNER JOIN Olist_DW.dbo.location l ON l.location_key = o.location_key
+INNER JOIN Olist_DW.dbo.product p ON p.product_key = o.product_key
 WHERE t.Year = 2018
-GROUP BY t.Year, o.seller_id, o.seller_state, o.product_category
+GROUP BY t.Year, o.seller_id, l.state, p.product
 ORDER BY Total_Revenue DESC;
 
 
