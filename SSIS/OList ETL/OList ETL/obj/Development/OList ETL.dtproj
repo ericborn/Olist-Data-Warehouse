@@ -26,7 +26,7 @@
           <SSIS:Property SSIS:Name="CreatorComputerName">DESKTOP-J0OJSOF</SSIS:Property>
           <SSIS:Property SSIS:Name="Description">
           </SSIS:Property>
-          <SSIS:Property SSIS:Name="PasswordVerifier" SSIS:Sensitive="1">AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAc3lxlBYk/EeTDHcCujoFBAAAAAACAAAAAAAQZgAAAAEAACAAAACB1d83/XWgqQTnXY7B9gXLV5uLJpj2Q1Omz5sbtluGYQAAAAAOgAAAAAIAACAAAAB4kUUArjWNky5Ohn9Ei81AHCAGWOloG2KVujCMkAZlpJAAAADx7kHpiYaod9BpzjodlHKKcfvj6jCnIddV3Kmlhnqi4WTWBcrzfaqfVZucPn5es1qDvM6L3XsQyrjF7qTxRxT5z5Q+TWCDtuMM65E/ECvKOklpyHVprEboeesfSyUzfyR4hWzakaSiuYxwHK7ndjpokaPmQGs22lsARlyoCP9leEifejWgjzmvGKpF4trvU9pAAAAApLpq7gj3Qj5Er5xIy5PkyH1QjNpfEAQaEYcbyvQO65t0nRnF4o9HBX9d5Nm/2Ke6FNlrIsAk1onrBZCvifMheQ==</SSIS:Property>
+          <SSIS:Property SSIS:Name="PasswordVerifier" SSIS:Sensitive="1">AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAc3lxlBYk/EeTDHcCujoFBAAAAAACAAAAAAAQZgAAAAEAACAAAAARDMDk76b81n5ZG2yr2J1WJE/ynuaKzA5ezYyaQTdKEgAAAAAOgAAAAAIAACAAAABgTZJNZJ7sv8W5YC9SVn5cCXxrR5MKIEcYpIddKqhvIpAAAACqXkW0UkX9H3Fuz4JnSzMzDCJj2RmztuU9puM1q234FDV/utOG2QdZNUZrm7/xUsvwQj4/RqBFw8EJh3BcUIf8fDUqzj5dqzxasU6UfUVtSqkxMdaSjqFErdbT+Om7ANxymzHwnnxoR8WSd3Ir8/Ha9LOT/Ugz263URYAodtwPVWUvfkZgnSOtyPWH13f55lhAAAAAUw+Z9Jg4nx/+CPDhUQ9lkktrs75QtGqXqjAeKNb7Wni0+jePh0w9dBvk7ehQ7uF7EmQlgKGbC+IDlY+2NFe8DQ==</SSIS:Property>
           <SSIS:Property SSIS:Name="FormatVersion">1</SSIS:Property>
         </SSIS:Properties>
         <SSIS:Packages>
@@ -64,7 +64,7 @@
                 <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
                 <SSIS:Property SSIS:Name="Required">0</SSIS:Property>
                 <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
-                <SSIS:Property SSIS:Name="Value">Data Source=localhost;Initial Catalog=Olist_DW;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;</SSIS:Property>
+                <SSIS:Property SSIS:Name="Value">Data Source=localhost;User ID=sa;Initial Catalog=Olist_DW;Provider=SQLNCLI11.1;Persist Security Info=True;Auto Translate=False;</SSIS:Property>
                 <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
               </SSIS:Properties>
             </SSIS:Parameter>
@@ -153,6 +153,7 @@
                 <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
                 <SSIS:Property SSIS:Name="Required">0</SSIS:Property>
                 <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+                <SSIS:Property SSIS:Name="Value">sa</SSIS:Property>
                 <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
               </SSIS:Properties>
             </SSIS:Parameter>
@@ -182,7 +183,7 @@
                 <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
                 <SSIS:Property SSIS:Name="Required">0</SSIS:Property>
                 <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
-                <SSIS:Property SSIS:Name="Value">Data Source=localhost;Initial Catalog=Olist_Orders;Provider=SQLNCLI11.1;Integrated Security=SSPI;Auto Translate=False;</SSIS:Property>
+                <SSIS:Property SSIS:Name="Value">Data Source=localhost;User ID=sa;Initial Catalog=Olist_Orders;Provider=SQLNCLI11.1;Persist Security Info=True;Auto Translate=False;</SSIS:Property>
                 <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
               </SSIS:Properties>
             </SSIS:Parameter>
@@ -271,6 +272,7 @@
                 <SSIS:Property SSIS:Name="IncludeInDebugDump">0</SSIS:Property>
                 <SSIS:Property SSIS:Name="Required">0</SSIS:Property>
                 <SSIS:Property SSIS:Name="Sensitive">0</SSIS:Property>
+                <SSIS:Property SSIS:Name="Value">sa</SSIS:Property>
                 <SSIS:Property SSIS:Name="DataType">18</SSIS:Property>
               </SSIS:Properties>
             </SSIS:Parameter>
